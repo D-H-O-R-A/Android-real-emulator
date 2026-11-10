@@ -61,6 +61,15 @@ pub fn build_emulator_args(opts: &LaunchOptions, profile: Option<&AvdProfile>) -
     args.push("-camera-front".to_string());
     args.push(cam_front);
 
+    // Explicitly pass Google & Cloudflare public DNS servers to bypass host systemd-resolved (127.0.0.53)
+    // which breaks Android internet and causes net::ERR_NAME_NOT_RESOLVED in Google Sign-In / MinuteMaidActivity.
+    args.push("-dns-server".to_string());
+    args.push("8.8.8.8,1.1.1.1".to_string());
+    args.push("-netdelay".to_string());
+    args.push("none".to_string());
+    args.push("-netspeed".to_string());
+    args.push("full".to_string());
+
     if let Some(mem) = opts.memory_mb {
         args.push("-memory".to_string());
         args.push(mem.to_string());
