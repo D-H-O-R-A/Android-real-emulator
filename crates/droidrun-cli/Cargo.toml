@@ -1,0 +1,13 @@
+[package]
+name = "droidrun-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "CLI for DroidRun - Open-source Android Desktop Runner with full Play Store and ARM64 support"
+
+[[bin]]
+name = "droidrun"
+path = "src/main.rs"
+
+[dependencies]
+droidrun-core = { path = "../droidrun-core" }
