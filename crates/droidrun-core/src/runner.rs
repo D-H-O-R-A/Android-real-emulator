@@ -36,12 +36,28 @@ impl Default for LaunchOptions {
 /// Builds the full command-line arguments for launching the Android instance with Play Store,
 /// Vulkan/GLES 3.1+, VirtioWifi, and dual cameras enabled.
 pub fn build_emulator_args(opts: &LaunchOptions, profile: Option<&AvdProfile>) -> Vec<String> {
+    let is_legacy = profile
+        .and_then(|p| p.properties.get("image.sysdir.1"))
+        .map(|s| {
+            s.contains("android-30")
+                || s.contains("android-2")
+                || s.contains("android-31")
+                || s.contains("android-32")
+        })
+        .unwrap_or(false);
+
+    let feature_flags = if is_legacy {
+        "PlayStoreImage,GLESDynamicVersion,VirtioWifi,-BluetoothEmulation".to_string()
+    } else {
+        "PlayStoreImage,GLESDynamicVersion,VirtioWifi,BluetoothEmulation".to_string()
+    };
+
     let mut args = vec![
         format!("@{}", opts.profile_name),
         "-gpu".to_string(),
         opts.gpu_mode.clone(),
         "-feature".to_string(),
-        "PlayStoreImage,GLESDynamicVersion,VirtioWifi,BluetoothEmulation".to_string(),
+        feature_flags,
     ];
 
     let cam_back = profile
@@ -125,6 +141,11 @@ pub fn launch_profile(
         cmd.stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null());
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::CommandExt;
+            cmd.process_group(0);
+        }
     }
 
     cmd.spawn()

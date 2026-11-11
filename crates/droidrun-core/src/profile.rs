@@ -26,6 +26,53 @@ impl AvdProfile {
     pub fn is_healthy_for_playstore(&self) -> bool {
         self.issues.is_empty()
     }
+
+    pub fn relative_ramdisk(&self) -> Option<String> {
+        let sysdir = self.properties.get("image.sysdir.1")?;
+        let trimmed = sysdir.trim_matches('/');
+        Some(format!("{trimmed}/ramdisk.img"))
+    }
+
+    pub fn is_magisk_patched(&self, host: &HostReport) -> bool {
+        if let (Some(sdk), Some(rel)) = (&host.sdk_root, self.relative_ramdisk()) {
+            sdk.join(rel).with_extension("img.backup").exists()
+        } else {
+            false
+        }
+    }
+
+    pub fn api_level(&self) -> Option<u32> {
+        self.properties
+            .get("target")
+            .and_then(|t| t.strip_prefix("android-"))
+            .and_then(|s| s.parse::<u32>().ok())
+            .or_else(|| {
+                self.properties.get("image.sysdir.1").and_then(|s| {
+                    s.split('/')
+                        .find(|seg| seg.starts_with("android-"))
+                        .and_then(|seg| seg.strip_prefix("android-"))
+                        .and_then(|num| num.parse::<u32>().ok())
+                })
+            })
+    }
+
+    pub fn android_version_string(&self) -> String {
+        match self.api_level() {
+            Some(25) => "Android 7.1.1 (Nougat)".to_string(),
+            Some(26) => "Android 8.0 (Oreo)".to_string(),
+            Some(27) => "Android 8.1 (Oreo)".to_string(),
+            Some(28) => "Android 9.0 (Pie)".to_string(),
+            Some(29) => "Android 10.0 (Q)".to_string(),
+            Some(30) => "Android 11.0 (R)".to_string(),
+            Some(31) => "Android 12.0 (S)".to_string(),
+            Some(32) => "Android 12L (Sv2)".to_string(),
+            Some(33) => "Android 13.0 (Tiramisu)".to_string(),
+            Some(34) => "Android 14.0 (UpsideDownCake)".to_string(),
+            Some(35) => "Android 15.0 (VanillaIceCream)".to_string(),
+            Some(n) => format!("Android (API {n})"),
+            None => "Versão Desconhecida".to_string(),
+        }
+    }
 }
 
 pub struct ProfileConfigOptions {
@@ -427,7 +474,12 @@ pub fn create_profile(
     props.insert("hw.cpu.ncore".to_string(), opts.cpu_cores.to_string());
     props.insert("hw.dPad".to_string(), "no".to_string());
     props.insert("hw.device.manufacturer".to_string(), "Google".to_string());
-    props.insert("hw.device.name".to_string(), "pixel_7_pro".to_string());
+    let device_name = if image.api_level <= 30 {
+        "pixel_5"
+    } else {
+        "pixel_7_pro"
+    };
+    props.insert("hw.device.name".to_string(), device_name.to_string());
     props.insert("hw.gltransport".to_string(), "pipe".to_string());
     props.insert("hw.gps".to_string(), "yes".to_string());
     props.insert("hw.gpu.enabled".to_string(), "yes".to_string());
@@ -627,6 +679,7 @@ mod tests {
             adb_bin: None,
             sdkmanager_bin: None,
             qemu_bin: None,
+            rootavd_dir: None,
             webcams: vec![],
             installed_images: vec![],
         };

@@ -58,6 +58,11 @@ pub struct SystemImageInfo {
 }
 
 impl SystemImageInfo {
+    /// Returns true if rootAVD has patched this image (indicated by ramdisk.img.backup).
+    pub fn is_magisk_patched(&self) -> bool {
+        self.full_path.join("ramdisk.img.backup").exists()
+    }
+
     /// Score this image for compatibility with the host architecture and Play Store requirements.
     pub fn compatibility_score(&self, host_arch: &str) -> i32 {
         let mut score = 0;
@@ -65,9 +70,10 @@ impl SystemImageInfo {
             score += 1000;
         }
         // Native CPU match is critical for hardware hypervisor (KVM / HVF / WHPX)
-        if self.primary_abi == host_arch {
-            score += 500;
-        } else if host_arch == "aarch64" && self.primary_abi == "arm64-v8a" {
+        if self.primary_abi == host_arch
+            || (host_arch == "x86_64" && self.primary_abi == "x86")
+            || (host_arch == "aarch64" && self.primary_abi == "arm64-v8a")
+        {
             score += 500;
         } else {
             // Mismatched primary ABI forces slow software emulation
@@ -97,6 +103,7 @@ pub struct HostReport {
     pub adb_bin: Option<PathBuf>,
     pub sdkmanager_bin: Option<PathBuf>,
     pub qemu_bin: Option<PathBuf>,
+    pub rootavd_dir: Option<PathBuf>,
     pub webcams: Vec<String>,
     pub installed_images: Vec<SystemImageInfo>,
 }
@@ -156,6 +163,7 @@ impl HostReport {
             format!("qemu-system-x86_64{exe_suffix}")
         };
         let qemu_bin = which_bin(&qemu_bin_name);
+        let rootavd_dir = crate::magisk::find_existing_rootavd();
 
         let webcams = detect_webcams(&os);
         let installed_images = sdk_root
@@ -175,6 +183,7 @@ impl HostReport {
             adb_bin,
             sdkmanager_bin,
             qemu_bin,
+            rootavd_dir,
             webcams,
             installed_images,
         }

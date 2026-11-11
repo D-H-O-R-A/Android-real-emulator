@@ -30,6 +30,14 @@ pub struct LiveAuditReport {
     pub sim_state: String,
     pub network_operator: String,
     pub feature_checks: Vec<FeatureCheck>,
+    pub magisk_installed: bool,
+    pub magisk_version: Option<String>,
+    pub root_available: bool,
+    pub zygisk_enabled: bool,
+    pub verified_boot_state: String,
+    pub flash_locked: String,
+    pub build_fingerprint: String,
+    pub denylist_enabled: bool,
 }
 
 const REQUIRED_PLAYSTORE_FEATURES: &[(&str, &str)] = &[
@@ -99,7 +107,7 @@ const REQUIRED_PLAYSTORE_FEATURES: &[(&str, &str)] = &[
     ),
 ];
 
-fn run_adb(adb_bin: &Path, serial: Option<&str>, args: &[&str]) -> io::Result<String> {
+pub fn run_adb(adb_bin: &Path, serial: Option<&str>, args: &[&str]) -> io::Result<String> {
     let mut cmd = Command::new(adb_bin);
     if let Some(s) = serial {
         cmd.arg("-s").arg(s);
@@ -211,6 +219,9 @@ pub fn audit_running_instance(
     let network_operator =
         run_adb(adb, s, &["shell", "getprop", "gsm.operator.alpha"]).unwrap_or_default();
 
+    let magisk_info = crate::magisk::inspect_live_magisk(host, s);
+    let integrity_info = crate::magisk::inspect_integrity_status(host, s);
+
     Ok(LiveAuditReport {
         device_serial: target_serial,
         android_version,
@@ -230,6 +241,14 @@ pub fn audit_running_instance(
         sim_state,
         network_operator,
         feature_checks,
+        magisk_installed: magisk_info.magisk_app_installed || magisk_info.magisk_version.is_some(),
+        magisk_version: magisk_info.magisk_version,
+        root_available: magisk_info.has_su,
+        zygisk_enabled: magisk_info.zygisk_enabled,
+        verified_boot_state: integrity_info.verified_boot_state,
+        flash_locked: integrity_info.flash_locked,
+        build_fingerprint: integrity_info.build_fingerprint,
+        denylist_enabled: integrity_info.denylist_enabled,
     })
 }
 
