@@ -359,9 +359,10 @@ fn cmd_list() {
     }
 
     println!("\n[Como Iniciar uma Versão Específica]:");
-    println!("  • Iniciar Android 7.1.1 (API 25) : droidrun start --version 7.1  (ou `droidrun start 7.1`)");
-    println!("  • Iniciar Android 11.0  (API 30) : droidrun start --version 11   (ou `droidrun start 11`)");
-    println!("  • Iniciar Android 15.0  (API 35) : droidrun start --version 15   (ou `droidrun start 15`)");
+    println!("  • Iniciar Android 7.1.1 (API 25) : droidrun start 7.1");
+    println!("  • Iniciar Android 8.1   (API 27) : droidrun start 8.1  (ou `droidrun start 27`)");
+    println!("  • Iniciar Android 11.0  (API 30) : droidrun start 11");
+    println!("  • Iniciar Android 15.0  (API 35) : droidrun start 15");
     println!("  • Encerrar e Salvar Instâncias  : droidrun stop");
 }
 
@@ -432,6 +433,8 @@ fn cmd_start(args: &[String]) {
                 let v = val.trim();
                 if v == "7.1" || v == "7" || v == "7.1.1" {
                     requested_version = Some("7.1".to_string());
+                } else if v == "8.1" || v == "8" || v == "8.1.0" {
+                    requested_version = Some("8.1".to_string());
                 } else if v == "11" || v == "11.0" {
                     requested_version = Some("11".to_string());
                 } else if v == "15" || v == "15.0" {
@@ -485,13 +488,16 @@ fn cmd_start(args: &[String]) {
         } else {
             match api {
                 25 => "DroidRun_A71".to_string(),
+                27 => "DroidRun_A81".to_string(),
                 30 => "DroidRun_A11".to_string(),
                 35 => "DroidRun_PlayStore".to_string(),
                 other => format!("DroidRun_API{other}"),
             }
         }
     } else {
-        if profiles.iter().any(|p| p.name == "DroidRun_A71") {
+        if profiles.iter().any(|p| p.name == "DroidRun_A81") {
+            "DroidRun_A81".to_string()
+        } else if profiles.iter().any(|p| p.name == "DroidRun_A71") {
             "DroidRun_A71".to_string()
         } else if profiles.iter().any(|p| p.name == "DroidRun_A11") {
             "DroidRun_A11".to_string()
@@ -500,7 +506,7 @@ fn cmd_start(args: &[String]) {
         } else if let Some(first) = profiles.first() {
             first.name.clone()
         } else {
-            "DroidRun_A71".to_string()
+            "DroidRun_A81".to_string()
         }
     };
     opts.profile_name = target_profile_name;
@@ -510,6 +516,8 @@ fn cmd_start(args: &[String]) {
         let target_api = requested_api.or_else(|| {
             if opts.profile_name.contains("A71") || opts.profile_name.contains("A7") {
                 Some(25)
+            } else if opts.profile_name.contains("A81") || opts.profile_name.contains("A8") || opts.profile_name.contains("27") {
+                Some(27)
             } else if opts.profile_name.contains("A11") {
                 Some(30)
             } else if opts.profile_name.contains("PlayStore") {

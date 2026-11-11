@@ -63,19 +63,18 @@ Você pode listar, iniciar qualquer versão específica do Android ou encerrar i
 # Listar todas as versões instaladas, APIs e status de Magisk Root:
 droidrun list
 
-# Iniciar Android 7.1.1 (API 25 - Nougat) sem restrições de Play Integrity modernas:
-droidrun start --version 7.1
-# ou de forma abreviada:
+# Iniciar Android 7.1.1 (API 25 - Nougat):
 droidrun start 7.1
 
+# Iniciar Android 8.1 (API 27 - Oreo):
+droidrun start 27
+# ou:
+droidrun start 8.1
+
 # Iniciar Android 11.0 (API 30 - Red Velvet Cake) com Magisk Root ativo:
-droidrun start --version 11
-# ou de forma abreviada:
 droidrun start 11
 
 # Iniciar Android 15.0 (API 35):
-droidrun start --version 15
-# ou de forma abreviada:
 droidrun start 15
 
 # Encerrar de forma segura e salvar o estado de todas as instâncias em execução:
